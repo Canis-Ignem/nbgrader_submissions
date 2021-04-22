@@ -4,7 +4,7 @@
 The file names should be [XX]ml[Y].ipynb  - [XX] is your student ID, [Y] is the exercise number.<br>
 ## Example: 22ml1.ipynb
 
-#Tips
+# Tips
 NotImplementedError()s are just to throw an error if you've missed any exercises - replace them with your code<br>
 Use the same variable names as required by the "assert"s.
 The "assert"s are used to check if you are on the right track and mark the work.
