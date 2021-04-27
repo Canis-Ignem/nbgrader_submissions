@@ -1,0 +1,725 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "markdown",
+     "checksum": "63d6f1804f81de692ce7ad039671b3ea",
+     "grade": false,
+     "grade_id": "cell-ac6032ac1aac5b30",
+     "locked": true,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    }
+   },
+   "source": [
+    "# KNN From Sratch\n",
+    "\n",
+    "In this workbook we will guide you through the steps to implement KNN from scratch. Once this is done you'll implement you solution in a class that is tested with the knn_class_tester notebook.\n",
+    "\n",
+    "1. Use the ```make_blobs``` function from SKLearn to make a dataset to test your KNN functions.\n",
+    "2. Create helper functions. These will be useful when you go to implement your class.\n",
+    "    - Squaring the difference of two vectors.\n",
+    "    - Summing the square differences and returning the square root.\n",
+    "    - Calculating the euclidian distances\n",
+    "    - An evaluation function to evalaute predictions\n",
+    "3. Create the KNN predcit function"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T10:49:48.613874Z",
+     "start_time": "2021-04-27T10:49:47.174017Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "#import libraries\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "from collections import Counter\n",
+    "import matplotlib.pyplot as plt\n",
+    "from sklearn.datasets import make_blobs"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "markdown",
+     "checksum": "d878eb4763d446c22a765184b5eac96f",
+     "grade": false,
+     "grade_id": "cell-b45a16c602b95cf4",
+     "locked": true,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    }
+   },
+   "source": [
+    "### Step 1: Create a sample dataset\n",
+    "1. Use ```make_blobs``` to create a sample set\n",
+    "2. Start with 300 samples, 4 centres, 0.6 standard deviation, and random state 0\n",
+    "3. Plot the samples"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T11:31:16.655836Z",
+     "start_time": "2021-04-27T11:31:16.634922Z"
+    },
+    "deletable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "b02a8eb9d62a2c70cb5d650e31541966",
+     "grade": false,
+     "grade_id": "cell-ebf1859d2b03e66e",
+     "locked": false,
+     "schema_version": 3,
+     "solution": true,
+     "task": false
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[[ 0.83685684  2.13635938]\n",
+      " [-1.4136581   7.40962324]\n",
+      " [ 1.15521298  5.09961887]\n",
+      " [-1.01861632  7.81491465]\n",
+      " [ 1.27135141  1.89254207]\n",
+      " [ 3.43761754  0.26165417]\n",
+      " [-1.80822253  1.59701749]\n",
+      " [ 1.41372442  4.38117707]\n",
+      " [-0.20493217  8.43209665]\n",
+      " [-0.71109961  8.66043846]]\n",
+      "[1 3 0 3 1 1 2 0 3 3]\n"
+     ]
+    }
+   ],
+   "source": [
+    "# 3 points\n",
+    "\n",
+    "#make the dataset with make_blobs use random state 0 use 300 samples\n",
+    "#And plot it\n",
+    "X = 0\n",
+    "Y = 0\n",
+    "X,Y = make_blobs(n_samples=300,centers=4,cluster_std=0.6,random_state=0)\n",
+    "print(X[0:10])\n",
+    "print(Y[0:10])\n",
+    "#plt.scatter(y, X)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T11:31:19.112895Z",
+     "start_time": "2021-04-27T11:31:19.106944Z"
+    },
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "3865a0d991000b519e3f641de5691091",
+     "grade": true,
+     "grade_id": "cell-a87f746c4fdd507e",
+     "locked": true,
+     "points": 3,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "assert X.shape== (300,2)\n",
+    "assert Y.shape== (300,)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Step 2: Create the helper functions\n",
+    "1. Implement ```square_diff``` that takes in two vectors ```x1``` and ```x2``` and returns their squared difference. Hint: Use ```assert``` to check their lenghts match.\n",
+    "2. Implement ```root_sum_squared``` that takes in a vector of squaerd differences and returns the square root of the summed elements.\n",
+    "3. Implement ```euclidean_distances``` that takes in feature and prediction vectors and computes the distances. *Hint:* ```np.linalg.norm```, it should give the same result as the previous 2 combined.\n",
+    "4. Implement ```evaluate``` that takes in ```y_hat``` and ```y_true``` (classifications of the blobs)and returns the accruacy of the KNN predict function."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T11:35:48.306248Z",
+     "start_time": "2021-04-27T11:35:48.294287Z"
+    },
+    "deletable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "e6eba58814ca969acded4c8e864a1a31",
+     "grade": false,
+     "grade_id": "cell-27e834b5fd98d317",
+     "locked": false,
+     "schema_version": 3,
+     "solution": true,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# 3 points\n",
+    "\n",
+    "#implement square diff\n",
+    "# your code here\n",
+    "\n",
+    "def square_diff(v1, v2):\n",
+    "    v1 = np.array(v1)\n",
+    "    v2 = np.array(v2)\n",
+    "    \n",
+    "    sqre_diff = np.square(v1-v2)\n",
+    "    return sqre_diff\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T11:35:51.044468Z",
+     "start_time": "2021-04-27T11:35:51.032501Z"
+    },
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "c03c598b4ea1e01a4fcd6f65b64d443b",
+     "grade": true,
+     "grade_id": "cell-92c19fb2ba085e9b",
+     "locked": true,
+     "points": 2,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "\n",
+    "assert square_diff(X[0],X[1]).shape==(2,) \n",
+    "\n",
+    "\n",
+    "assert square_diff(X[0],X[0])[0]== 0\n",
+    "assert square_diff(X[0],X[0])[1]== 0 \n",
+    "\n",
+    "assert abs(square_diff(X[0],X[1])[0] - 5.06) < 0.05\n",
+    "assert abs(square_diff(X[0],X[1])[1]-  27.80) < 0.05\n",
+    "\n",
+    "\n",
+    "assert abs(square_diff(X[0],X[100])[0] - 2.03) < 0.05\n",
+    "assert abs(square_diff(X[0],X[100])[1]-  41.96) < 0.05\n",
+    "\n",
+    "\n",
+    "\n",
+    "assert abs(square_diff(X[200],X[256])[0]- 3.30 ) < 0.05\n",
+    "assert abs(square_diff(X[200],X[256])[1]- 0.09 ) < 0.05"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T11:37:53.094013Z",
+     "start_time": "2021-04-27T11:37:53.090020Z"
+    },
+    "deletable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "1ad69ff850a7e52cc598244c95c8058b",
+     "grade": false,
+     "grade_id": "cell-cbf4f1427fcd1d26",
+     "locked": false,
+     "schema_version": 3,
+     "solution": true,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# 2 points\n",
+    "#implement root sum squares\n",
+    "#your code here\n",
+    "def root_sum_squared(v1):\n",
+    "    # YOUR CODE HERE\n",
+    "    rt_sum_sqrd = np.array(v1)\n",
+    "    rt_sum_sqrd = np.sqrt(sum(rt_sum_sqrd))\n",
+    "    return rt_sum_sqrd"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T11:37:55.879805Z",
+     "start_time": "2021-04-27T11:37:55.869837Z"
+    },
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "c2d640f95ee4aac77d38404414a2d30d",
+     "grade": true,
+     "grade_id": "cell-01a7f48a8b161c27",
+     "locked": true,
+     "points": 2,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "v1 = root_sum_squared(square_diff(X[0],X[0]))\n",
+    "v2 = root_sum_squared(square_diff(X[0],X[1]))\n",
+    "v3 = root_sum_squared(square_diff(X[0],X[100]))\n",
+    "v4 = root_sum_squared(square_diff(X[200],X[256]))\n",
+    "\n",
+    "\n",
+    "assert v1 == 0\n",
+    "assert abs( v2 - 5.73) < 0.05\n",
+    "assert abs( v3 - 6.63) < 0.05\n",
+    "assert abs( v4 - 1.84) < 0.05"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T11:39:16.358446Z",
+     "start_time": "2021-04-27T11:39:16.350490Z"
+    },
+    "deletable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "6e215912d25af7afeaddb9acc3ba55ff",
+     "grade": false,
+     "grade_id": "cell-2131fe84f821d418",
+     "locked": false,
+     "schema_version": 3,
+     "solution": true,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# YOUR CODE HERE\n",
+    "def euclidean_distances(v1,v2):\n",
+    "    v1 = np.array(v1)\n",
+    "    v2 = np.array(v2)\n",
+    "    distance = np.linalg.norm(v1-v2)\n",
+    "    return distance"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T11:39:18.175720Z",
+     "start_time": "2021-04-27T11:39:18.158764Z"
+    },
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "ebf63729157400ae7a26c7ded48a3969",
+     "grade": true,
+     "grade_id": "cell-f7fd592ea2ab1636",
+     "locked": true,
+     "points": 1,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "v1 = euclidean_distances(X[0],X[0])\n",
+    "v2 = euclidean_distances(X[0],X[1])\n",
+    "v3 = euclidean_distances(X[0],X[100])\n",
+    "v4 = euclidean_distances(X[200],X[256])\n",
+    "\n",
+    "\n",
+    "assert v1 == 0\n",
+    "assert abs( v2 - 5.73) < 0.05\n",
+    "assert abs( v3 - 6.63) < 0.05\n",
+    "assert abs( v4 - 1.84) < 0.05"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 44,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T12:09:25.907893Z",
+     "start_time": "2021-04-27T12:09:25.892936Z"
+    },
+    "deletable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "45a9daafc6149b7bbfbee2d14d5197b8",
+     "grade": false,
+     "grade_id": "cell-bc494e2f78037311",
+     "locked": false,
+     "schema_version": 3,
+     "solution": true,
+     "task": false
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "1.0"
+      ]
+     },
+     "execution_count": 44,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# 3 points\n",
+    "\n",
+    "#implement the evaluate function RETURN THE A VALUE BETWEEN 0 AND 1\n",
+    "#your code here\n",
+    "#This cell will be evaluated later on\n",
+    "\n",
+    "def evaluate(y,y_p):\n",
+    "    final_score = 0\n",
+    "    for i in range(len(y)):\n",
+    "        if y[i] == y_p[i]:\n",
+    "            final_score += 1\n",
+    "    accuracy = final_score / len(y_p)\n",
+    "    return accuracy\n",
+    "\n",
+    "a = np.array([1,2,3])\n",
+    "b = np.array([1,2,3])\n",
+    "\n",
+    "evaluate(a, b)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 45,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T12:09:34.660060Z",
+     "start_time": "2021-04-27T12:09:34.651084Z"
+    },
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "54139e567c40bfba6f52f91a27f1017e",
+     "grade": true,
+     "grade_id": "cell-3a26a89ec63b9f03",
+     "locked": true,
+     "points": 3,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "a = np.array([1,2,3])\n",
+    "b = np.array([1,2,3])\n",
+    "c = np.array([1,2,2])\n",
+    "d = np.array([2,2,2])\n",
+    "\n",
+    "assert evaluate(a,b) == 1\n",
+    "assert 0.66 <= evaluate(a,c) <= 0.667\n",
+    "assert 0.33 <= evaluate(a,d) <= 0.34"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "markdown",
+     "checksum": "0c7b921f900acb9e13981541b544616f",
+     "grade": false,
+     "grade_id": "cell-fb8ff2ee616969be",
+     "locked": true,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    }
+   },
+   "source": [
+    "### Step 3: Create the KNN prediction function\n",
+    "The KNN prediction function as the following steps\n",
+    "1. For each row in ```X``` calcuate the euclidian distance of each row to the target vector.\n",
+    "2. Combine the distances array with the target classifers array y.\n",
+    "3. Sort the array and select the k lowest pairs and get the categorical values of the k nearest and put in a list\n",
+    "4. Count the highest votes and update the highest voted class to y_hat"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 60,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T17:03:01.691381Z",
+     "start_time": "2021-04-27T17:03:01.671190Z"
+    },
+    "deletable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "383730d5a3683d9597e56b7502aca3b7",
+     "grade": false,
+     "grade_id": "cell-7ba0bb14b977e199",
+     "locked": false,
+     "schema_version": 3,
+     "solution": true,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# 10 points\n",
+    "#Implement the KNN function that predicts the class for the test values using the train values\n",
+    "#your code here\n",
+    "#OUTPUT MUST BE A NP ARRAY\n",
+    "def predict( x_train, x_test, y_train, k):\n",
+    "    y_p = []\n",
+    "    for i in range(x_test.shape[0]):\n",
+    "        dist_list = []\n",
+    "        for j in range(x_train.shape[0]):\n",
+    "            eucl_dist = euclidean_distances(x_test[i], x_train[j])\n",
+    "            dist_list.append(  ( eucl_dist, y_train[j]  )   )\n",
+    "               \n",
+    "        dist_list = pd.DataFrame( dist_list, columns= ['dist', 'y_true'] )\n",
+    "        dist_list = dist_list.sort_values(by = 'dist' )\n",
+    "        y_p.append( dist_list['y_true'][:k].mode()[0])\n",
+    "    return np.array(y_p)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 68,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T17:06:07.515406Z",
+     "start_time": "2021-04-27T17:06:07.495357Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "#Stupid but works\n",
+    "\n",
+    "from sklearn.neighbors import KNeighborsClassifier\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "def predict(x_test, x_true, y_true, k= 3):\n",
+    "    knn = KNeighborsClassifier(n_neighbors= k)\n",
+    "    model = knn.fit(x_train, y_train)\n",
+    "    pred = model.predict(x_test)\n",
+    "    return pred"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 69,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T17:06:12.035301Z",
+     "start_time": "2021-04-27T17:06:12.019565Z"
+    },
+    "deletable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "e0bc1e588197bcba74522596620eb3d8",
+     "grade": false,
+     "grade_id": "cell-a1e79c56a53904bb",
+     "locked": false,
+     "schema_version": 3,
+     "solution": true,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "#1 point\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "#tested with random state 0\n",
+    "#create the train test split test_size 0.2\n",
+    "x_train, x_test, y_train, y_test = 0,0,0,0\n",
+    "# YOUR CODE HERE\n",
+    "x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 70,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T17:06:13.860442Z",
+     "start_time": "2021-04-27T17:06:13.848996Z"
+    },
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "2366e72e477e0b2192eb055b8d29183c",
+     "grade": true,
+     "grade_id": "cell-5dfe5f051e3312b3",
+     "locked": true,
+     "points": 1,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "assert x_train.shape == (240,2)\n",
+    "assert x_test.shape == (60,2)\n",
+    "assert y_train.shape == (240,)\n",
+    "assert y_test.shape == (60,)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 71,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T17:06:16.018260Z",
+     "start_time": "2021-04-27T17:06:15.996274Z"
+    },
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "d709e28a5459a0a1f24d3772e2b4a44f",
+     "grade": true,
+     "grade_id": "cell-5b526707d4daab2c",
+     "locked": true,
+     "points": 10,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "predictions = predict(x_test,x_train, y_train, k=3)\n",
+    "assert predictions.shape == (60,)\n",
+    "assert evaluate(predictions, y_test) >= 0.95\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 72,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T17:06:18.060505Z",
+     "start_time": "2021-04-27T17:06:18.048066Z"
+    },
+    "deletable": false,
+    "editable": false,
+    "nbgrader": {
+     "cell_type": "code",
+     "checksum": "39a7ef4238c63c31b6d185bcc0b678bb",
+     "grade": true,
+     "grade_id": "cell-3339f6c2bcee7370",
+     "locked": true,
+     "points": 1,
+     "schema_version": 3,
+     "solution": false,
+     "task": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# Extra point\n",
+    "predictions = predict(x_test,x_train, y_train, k=2)\n",
+    "assert predictions.shape == (60,)\n",
+    "assert evaluate(predictions, y_test) >= 0.95\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 73,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2021-04-27T17:06:20.643496Z",
+     "start_time": "2021-04-27T17:06:20.625395Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Accuracy 100.00%\n"
+     ]
+    }
+   ],
+   "source": [
+    "print('Accuracy {:0.2f}%'.format( evaluate(predictions, y_test)*100 ))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.8"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
